@@ -1,0 +1,45 @@
+{
+  "id": "Rmd_data-paper",
+  "mode": "entity",
+  "dependencies": {
+    "packages": {
+      "cran": [
+        "gsheet",
+        "ncdf4"
+      ],
+      "cran_force_install" : false,
+      "github": [
+        "btupper/threddscrawler"  
+      ],
+      "github_force_install": false
+    },
+    "scripts": [
+    ]
+  },
+  "metadata": {
+    "entities": {
+      "script": "geoflow_handler_entity_NetCDF.R",
+      "handler": "handle_entities_thredds_catalogs",
+      "source": "http://mdst-macroes.ird.fr:8080/thredds/catalog/macroes/world/zoo2/ORCA/1D/5d/catalog.xml"
+    },
+    "contacts" : {
+      "handler": "gsheet",
+      "source": "https://docs.google.com/spreadsheets/d/144NmGsikdIRE578IN0McK9uZEUHZdBuZcGy1pJS6nAg/edit?usp=sharing"
+    }
+  },
+  "software": [
+  ],
+"actions": [
+  {
+      "id": "create-Rmd",
+      "options" : {
+        "html" : true
+        },
+      "run": true
+    },
+    {
+      "id": "create-eml",
+      "run": true
+    }
+  ]
+}
