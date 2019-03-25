@@ -11,7 +11,8 @@ create_eml <- function(entity, config, options){
   pubDate <- if(!is.null(entity$date)) as.character(entity$date) else as.character(Sys.Date())
   identifier <- entity$identifiers[["id"]]
   title <- entity$title
-  abstract <- if(entity$descriptions[1]!=0) entity$descriptions[["abstract"]] else "TO BE WRITTEN"
+  # abstract <- if(entity$descriptions[1]!=0) entity$descriptions[["abstract"]] else "TO BE WRITTEN"
+  abstract <- if(!is.null(entity$descriptions[["abstract"]])) entity$descriptions[["abstract"]] else "TO BE WRITTEN"
   # intellectualRights <- if(!is.null(entity$rights)) entity$rights[["accessconstraint"]] else entity$rights[sapply("TO BE DONE", "accessconstraint")]
 
 
@@ -57,6 +58,7 @@ create_eml <- function(entity, config, options){
     )
 
   #add keywords
+  config$logger.info("set EML keywords")  
   if(!is.null(entity$subjects)){
     keywords_metadata <- entity$getSubjects(keywords = TRUE, pretty = TRUE)
     different_thesaurus <- unique(keywords_metadata$subject_name)
@@ -84,8 +86,11 @@ create_eml <- function(entity, config, options){
   }
 
   #add contacts
+  config$logger.info("set EML contacts")  
   new_eml_contact=NULL
-  for(entity_contact in entity$contacts){
+  eml_contacts <- vector("list", length(entity$contacts))
+  for(i in 1:length(entity$contacts)){
+    entity_contact <- entity$contacts[[i]]
     eml_contact_role <- NULL
     eml_contact_role <- switch(entity_contact$role,
                                "metadata" = "associatedParty",
@@ -100,7 +105,7 @@ create_eml <- function(entity, config, options){
       #         the_contact <- contacts[contacts$electronicMailAddress%in%contacts_metadata$contacts_roles$contact[i],]
       #         cat(the_contact$electronicMailAddress)
       #         cat(contacts_metadata$contacts_roles$RoleCode[i])
-    }
+    } else {}
     
     HF_address <- new("address",
                       deliveryPoint = entity_contact$postalAddress,
@@ -118,25 +123,16 @@ create_eml <- function(entity, config, options){
       organizationName = entity_contact$organizationName,
       phone = entity_contact$voice
     )
-    
-    }
-#   else {
-#     new_eml_contact <-  new(
-#       eml_contact_role= "contact",
-#       individualName = "John, Snow",
-#       electronicMail = "john.snow@toto.org",
-#       address = "in the North",
-#       organizationName = "xx"
-#       )  
-#     }
+    # new_eml_contact$role <- eml_contact_role
+    eml_contacts[[i]]<- new_eml_contact
+  }
   
-
-
-
-#  config$logger.info("WRITE EML METADATA")  
+  
+  config$logger.info("MERGE EML METADATA")
   dataset <- new("dataset",
                  title = title,
                  creator = new_eml_contact,
+                 # creator = eml_contacts[[1]], #eml_contacts[sapply(eml_contacts, function(x){x$role == "owner"})],
                  pubDate = pubDate,
                  intellectualRights = "IPR",
                  abstract = abstract,
@@ -144,17 +140,20 @@ create_eml <- function(entity, config, options){
                  # associatedParty = new_eml_contact[new_eml_contact$eml_contact_role%in%"associatedParty",],
                  keywordSet = keywordSet,
                  coverage = coverage,
-                 contact = new_eml_contact,
                  # methods = methods,
-                 dataTable = NULL)
-  
-  eml <- new("eml",
-             packageId = entity$identifiers[["id"]],  # from uuid::UUIDgenerate(),
-             system = "uuid", # type of identifier
-             dataset = dataset)
+                 dataTable = NULL
+  )
   
 
-  #we save the metadata
+  config$logger.info("LOAD EML METADATA")
+  eml <- new("eml",
+             packageId = "toto-2619-425e-b8be-8deb6bc6094d",  # from uuid::UUIDgenerate(),
+             system = "uuid", # type of identifier
+             dataset = dataset
+             )
+  
+  
+  config$logger.info("SAVE EML METADATA")
   saveRDS(eml, file.path(getwd(), "metadata", paste0(entity$identifiers[["id"]], "_eml.rds")))
   filename <-paste0(entity$identifiers[["id"]], "_eml.xml")
   this_wd <- getwd()
