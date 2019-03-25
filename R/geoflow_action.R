@@ -53,6 +53,18 @@ register_actions <- function(){
       type = "Data publication",
       def = "Deposits/Publish data and/or metadata in the Zenodo infrastructure",
       fun = zen4R_deposit_record
+    ),
+    geoflow_action$new(
+      id = "create-Rmd",
+      type = "Metadata production",
+      def = "Generate a R markdown document (html, pdf...)",
+      fun = create_Rmd
+    ),
+    geoflow_action$new(
+      id = "create-eml",
+      type = "Metadata production",
+      def = "Mapping R metadata with EML (Ecological Metadata Language)",
+      fun = create_eml
     )
   )
   .geoflow$actions <- objs
