@@ -1,4 +1,5 @@
 # adapted from from https://github.com/juldebar/R_Metadata/blob/master/metadata_workflow_google_doc_Dublin_Core/scripts/write_metadata_EML.R
+# for EML version 1 on CRAN (not version2): https://cran.r-project.org/web/packages/EML/vignettes/creating-EML.html 
 
 create_eml <- function(entity, config, options){
   
@@ -6,7 +7,7 @@ create_eml <- function(entity, config, options){
     stop("This action requires the 'EML' package")
   }
   
-  config$logger.info("Start the mapping of EML metadata elements with R metadata")
+  config$logger.info("Start the mapping of EML metadata elements with R metadata (using eml version 1 on CRAN")
   
   pubDate <- if(!is.null(entity$date)) as.character(entity$date) else as.character(Sys.Date())
   identifier <- entity$identifiers[["id"]]
@@ -17,21 +18,27 @@ create_eml <- function(entity, config, options){
 
   config$logger.info("Coverage metadata => geographicCoverage / temporalCoverage  (TO BE DONE => taxonomicCoverage)")  
   
-  config$logger.info("EML temporalCoverage")  
+  config$logger.info("EML temporalCoverage")
+
+  beginPosition <- "2007-03-01T13:00:00Z"
+  endPosition <- "2008-05-11T15:30:00Z"
+  
   if(!is.null(entity$temporal_extent)){
     
     if(!is.null(entity$temporal_extent$instant)){
-      beginPosition = entity$temporal_extent$instant
-      endPosition = entity$temporal_extent$instant
+      beginPosition = as.character(entity$temporal_extent$instant)
+      endPosition = as.character(entity$temporal_extent$instant)
     }
     
     if(!is.null(entity$temporal_extent$start) & !is.null(entity$temporal_extent$end)){
-      beginPosition = entity$temporal_extent$start
-      endPosition = entity$temporal_extent$end
+      beginPosition = as.character(entity$temporal_extent$start)
+      endPosition = as.character(entity$temporal_extent$end)
     }
-    
-    }
-
+  }
+  
+  start = str_to_posix(beginPosition)
+  end = str_to_posix(endPosition)
+  
   config$logger.info("EML geographicCoverage")  
   if(!is.null(entity$spatial_extent)){
     sf_bbox <- attr(entity$spatial_extent, "bbox")
@@ -43,8 +50,8 @@ create_eml <- function(entity, config, options){
 
   config$logger.info("set EML coverage")  
   coverage <- set_coverage(
-    begin = as.character(beginPosition),
-    end = as.character(endPosition),
+    begin=beginPosition,
+    end = endPosition,
     sci_names = "Sarracenia purpurea", # TO BE DONE => USE taxonomicCoverage if species or taxon !!!
     geographicDescription = "geographic_identifier",  # TO BE DONE REMOVE i
     west = west,
@@ -101,9 +108,6 @@ create_eml <- function(entity, config, options){
                                )
     if(is.null(eml_contact_role)){
       config$logger.info("No mapping has been found for the role of the conctact !")  
-      #         the_contact <- contacts[contacts$electronicMailAddress%in%contacts_metadata$contacts_roles$contact[i],]
-      #         cat(the_contact$electronicMailAddress)
-      #         cat(contacts_metadata$contacts_roles$RoleCode[i])
     } else {}
     
     HF_address <- new("address",
@@ -122,7 +126,6 @@ create_eml <- function(entity, config, options){
       organizationName = entity_contact$organizationName,
       phone = entity_contact$voice
     )
-    # new_eml_contact$role <- eml_contact_role
     eml_contacts[[i]]<- new_eml_contact
   }
   
