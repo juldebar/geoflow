@@ -1,0 +1,37 @@
+{
+  "id": "Rmd_data-paper",
+  "mode": "entity",
+  "dependencies": {
+    "packages": {
+      "cran": [
+        "XML",
+        "geometa"
+      ],
+      "cran_force_install" : false,
+      "github": [
+        "btupper/threddscrawler"  
+      ],
+      "github_force_install": false
+    },
+    "scripts": [
+    ]
+  },
+  "metadata": {
+    "entities": {
+      "script": "geoflow_handler_entity_iso_19115.R",
+      "handler": "handle_entities_iso_19115",
+      "source": "http://geonetwork-sdi-lab.d4science.org/geonetwork/srv/eng/xml.metadata.get?uuid=fao-rfb-map-swiofc"
+    }
+  },
+  "software": [
+  ],
+"actions": [
+    {
+      "id": "geometa-create-iso-19115",
+      "options" : {
+        "inspire" : true
+      },
+      "run": true
+    }
+  ]
+}
