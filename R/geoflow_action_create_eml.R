@@ -6,16 +6,16 @@ create_eml <- function(entity, config, options){
     stop("This action requires the 'EML' package")
   }
   
-  config$logger.info("Ay, Caramba")
+  config$logger.info("Start the mapping of EML metadata elements with R metadata")
   
   pubDate <- if(!is.null(entity$date)) as.character(entity$date) else as.character(Sys.Date())
   identifier <- entity$identifiers[["id"]]
   title <- entity$title
   abstract <- if(!is.null(entity$descriptions[["abstract"]])) entity$descriptions[["abstract"]] else "TO BE WRITTEN"
   # intellectualRights <- if(!is.null(entity$rights)) entity$rights[["accessconstraint"]] else entity$rights[sapply("TO BE DONE", "accessconstraint")]
-  
-  
-  config$logger.info("Coverage metadata => TO BE DONE => geographicCoverage / temporalCoverage / taxonomicCoverage.")  
+
+
+  config$logger.info("Coverage metadata => geographicCoverage / temporalCoverage  (TO BE DONE => taxonomicCoverage)")  
   
   config$logger.info("EML temporalCoverage")  
   if(!is.null(entity$temporal_extent)){
@@ -30,8 +30,8 @@ create_eml <- function(entity, config, options){
       endPosition = entity$temporal_extent$end
     }
     
-  }
-  
+    }
+
   config$logger.info("EML geographicCoverage")  
   if(!is.null(entity$spatial_extent)){
     sf_bbox <- attr(entity$spatial_extent, "bbox")
@@ -40,7 +40,7 @@ create_eml <- function(entity, config, options){
     north = sf_bbox$xmax
     south = sf_bbox$ymin
   }
-  
+
   config$logger.info("set EML coverage")  
   coverage <- set_coverage(
     begin = as.character(beginPosition),
@@ -54,9 +54,10 @@ create_eml <- function(entity, config, options){
     altitudeMin = 0, # TO BE DONE
     altitudeMaximum = 0, # TO BE DONE
     altitudeUnits = "meter"
-  )
-  
+    )
+
   #add keywords
+  config$logger.info("set EML keywords")  
   if(!is.null(entity$subjects)){
     keywords_metadata <- entity$getSubjects(keywords = TRUE, pretty = TRUE)
     different_thesaurus <- unique(keywords_metadata$subject_name)
@@ -82,25 +83,28 @@ create_eml <- function(entity, config, options){
       class(all_thesaurus)
     }
   }
-  
+
   #add contacts
+  config$logger.info("set EML contacts")  
   new_eml_contact=NULL
-  for(entity_contact in entity$contacts){
+  eml_contacts <- vector("list", length(entity$contacts))
+  for(i in 1:length(entity$contacts)){
+    entity_contact <- entity$contacts[[i]]
     eml_contact_role <- NULL
     eml_contact_role <- switch(entity_contact$role,
                                "metadata" = "associatedParty",
                                "pointOfContact" = "contact",
                                "principalInvestigator" = "contact",
                                "publisher" = "contact",
-                               "owner" = "contact",
+                               "owner" = "associatedParty",
                                "originator" = "contact"
-    )
+                               )
     if(is.null(eml_contact_role)){
       config$logger.info("No mapping has been found for the role of the conctact !")  
       #         the_contact <- contacts[contacts$electronicMailAddress%in%contacts_metadata$contacts_roles$contact[i],]
       #         cat(the_contact$electronicMailAddress)
       #         cat(contacts_metadata$contacts_roles$RoleCode[i])
-    }
+    } else {}
     
     HF_address <- new("address",
                       deliveryPoint = entity_contact$postalAddress,
@@ -108,7 +112,7 @@ create_eml <- function(entity, config, options){
                       #administrativeArea = entity_contact$administrativeArea,
                       #postalCode = entity_contact$postalCode,
                       country = entity_contact$country
-    )
+                      )
     
     new_eml_contact <-  new(
       eml_contact_role,
@@ -118,43 +122,36 @@ create_eml <- function(entity, config, options){
       organizationName = entity_contact$organizationName,
       phone = entity_contact$voice
     )
-    
+    # new_eml_contact$role <- eml_contact_role
+    eml_contacts[[i]]<- new_eml_contact
   }
-  #   else {
-  #     new_eml_contact <-  new(
-  #       eml_contact_role= "contact",
-  #       individualName = "John, Snow",
-  #       electronicMail = "john.snow@toto.org",
-  #       address = "in the North",
-  #       organizationName = "xx"
-  #       )  
-  #     }
   
   
-  
-  
-  #  config$logger.info("WRITE EML METADATA")  
+  config$logger.info("MERGE EML METADATA")
   dataset <- new("dataset",
                  title = title,
-                 creator = new_eml_contact,
+                 creator = eml_contacts,
                  pubDate = pubDate,
                  intellectualRights = "IPR",
                  abstract = abstract,
-                 associatedParty = new_eml_contact,#@julien => select new_eml_contact where role=associatedParty
-                 # associatedParty = new_eml_contact[new_eml_contact$eml_contact_role%in%"associatedParty",],
+                 associatedParty = eml_contacts,
                  keywordSet = keywordSet,
                  coverage = coverage,
-                 contact = new_eml_contact,
+                 contact = eml_contacts,
                  # methods = methods,
-                 dataTable = NULL)
+                 dataTable = NULL
+  )
   
+
+  config$logger.info("LOAD EML METADATA")
   eml <- new("eml",
-             packageId = entity$identifiers[["id"]],  # from uuid::UUIDgenerate(),
+             packageId = "toto-2619-425e-b8be-8deb6bc6094d",  # from uuid::UUIDgenerate(),
              system = "uuid", # type of identifier
-             dataset = dataset)
+             dataset = dataset
+             )
   
   
-  #we save the metadata
+  config$logger.info("SAVE EML METADATA")
   saveRDS(eml, file.path(getwd(), "metadata", paste0(entity$identifiers[["id"]], "_eml.rds")))
   filename <-paste0(entity$identifiers[["id"]], "_eml.xml")
   this_wd <- getwd()
@@ -165,3 +162,5 @@ create_eml <- function(entity, config, options){
   
   return(eml)
 }
+  
+
