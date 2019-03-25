@@ -63,8 +63,14 @@ register_actions <- function(){
     geoflow_action$new(
       id = "create-eml",
       type = "Metadata production",
-      def = "Mapping R metadata with EML (Ecological Metadata Language)",
+      def = "Mapping R metadata with EML version 1 (Ecological Metadata Language)",
       fun = create_eml
+    ),
+    geoflow_action$new(
+      id = "create-eml2",
+      type = "Metadata production",
+      def = "Mapping R metadata with EML version 2 (Ecological Metadata Language)",
+      fun = create_eml2
     )
   )
   .geoflow$actions <- objs
