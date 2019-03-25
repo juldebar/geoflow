@@ -137,7 +137,7 @@ handle_contacts_19115 <- function(config, source){
   
   contact_obj$setRole(the_contact$role$value)
   if(is.null(the_contact$contactInfo$address$electronicMailAddress)==FALSE) contact_obj$setId(the_contact$contactInfo$address$electronicMailAddress) else contact_obj$setId("-")
-  if(is.null(the_contact$contactInfo$address$electronicMailAddress)==FALSE) contact_obj$setmail(the_contact$contactInfo$address$electronicMailAddress) else contact_obj$setEmail("-")
+  if(is.null(the_contact$contactInfo$address$electronicMailAddress)==FALSE) contact_obj$setEmail(the_contact$contactInfo$address$electronicMailAddress) else contact_obj$setEmail("-")
   if(is.null(the_contact$individualName)==FALSE) contact_obj$setIndividualName(the_contact$individualName) else contact_obj$setIndividualName("-")
   if(is.null(the_contact$organisationName)==FALSE) contact_obj$setOrganizationName(the_contact$organisationName) else contact_obj$setOrganizationName("-")
   if(is.null(the_contact$positionName)==FALSE) contact_obj$setPositionName(the_contact$positionName) else contact_obj$setPositionName("-")
