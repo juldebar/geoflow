@@ -28,8 +28,7 @@ handle_entities_iso_19115 <- function(config, source){
   entities <- list()
   
   entity <- geoflow_entity$new()
-      
-      #identifier
+
       entity$setIdentifier("id", md$identificationInfo[[1]]$citation$identifier$code)
       entity$setTitle(md$identificationInfo[[1]]$citation$title)
       entity$setDescription("abstract", md$identificationInfo[[1]]$abstract)
@@ -47,15 +46,14 @@ handle_entities_iso_19115 <- function(config, source){
 #       }
       
       config$logger.info("----------------------------------------------------")  
-      config$logger.info("Data frame for spatial extent")
+      config$logger.info("Read spatial coverage")
       config$logger.info("----------------------------------------------------")  
-      #       #spatial coverage
-      SRID<-md$referenceSystemInfo[[1]]$referenceSystemIdentifier$code
       xmin <- md$identificationInfo[[1]]$extent[[1]]$geographicElement[[1]]$eastBoundLongitude[1]
       xmax <- md$identificationInfo[[1]]$extent[[1]]$geographicElement[[1]]$westBoundLongitude[1]
       ymin <- md$identificationInfo[[1]]$extent[[1]]$geographicElement[[1]]$southBoundLatitude[1]
       ymax <- md$identificationInfo[[1]]$extent[[1]]$geographicElement[[1]]$northBoundLatitude[1]
       wkt_bouding_box=paste0("POLYGON((",xmin," ",ymin,",",xmin," ",ymax,",",xmax," ",ymax,",",xmax," ",ymin,",",xmin," ",ymin,"))")
+      SRID<-md$referenceSystemInfo[[1]]$referenceSystemIdentifier$code
       # entity$setSrid(SRID)
       entity$setSrid("4326")
       entity$setSpatialExtent(wkt_bouding_box, crs = 4326)
@@ -71,7 +69,7 @@ handle_entities_iso_19115 <- function(config, source){
       
       
       config$logger.info("----------------------------------------------------")  
-      config$logger.info("Data frame for temporal extent")  
+      config$logger.info("Read the temporal coverage")  
       config$logger.info("----------------------------------------------------")
       
       for (l in md$identificationInfo[[1]]$extent[[1]]$temporalElement){
@@ -82,39 +80,53 @@ handle_entities_iso_19115 <- function(config, source){
       }
       
       config$logger.info("----------------------------------------------------")  
-      config$logger.info("Contacts")  
+      config$logger.info("Read contacts")  
       config$logger.info("----------------------------------------------------")  
-      #add contacts
+      contacts <-list()
+      contacts <- c(md$contact,
+                    md$identificationInfo[[1]]$citation$citedResponsibleParty,
+                    md$identificationInfo[[1]]$pointOfContact
+                    )
       
-      # for(entity_contact in entity$contacts){
-      
-      the_contact <- md$identificationInfo[[1]]$citation$citedResponsibleParty
-      contact_obj <- handle_contacts_19115(config, the_contact)
-      entity$addContact(contact_obj)
-      
-      # }
+      for (c in 1:length(contacts)){
+        contact_obj <-handle_contacts_19115(config,contacts[[c]])
+        entity$addContact(contact_obj)
+        }
       
       config$logger.info("----------------------------------------------------")  
-      config$logger.info("keywords")  
+      config$logger.info("Read the keywords")  
       config$logger.info("----------------------------------------------------")  
+      
       #subjects
-#       for(i in 1:length(md$identificationInfo[[1]]$descriptiveKeywords)){
-#         thesaurusName <- md$identificationInfo[[1]]$descriptiveKeywords[[i]]$thesaurusName$title
-#         keywords <- md$identificationInfo[[1]]$descriptiveKeywords[[i]]$keyword
-#         for (k in keywords){
-#           all_keywords[nrow(all_keywords)+1,] <- c(k, thesaurusName)
-#         }
-#         keywords_metadata$all_keywords <- all_keywords
-#       }
-#       
-#       #subjects
-#       for(i in 1:length(md$identificationInfo[[1]]$descriptiveKeywords)){
-#         subjects <- md$identificationInfo[[1]]$descriptiveKeywords[[i]]$keyword
-#       }
-#       invisible(lapply(subjects, function(subject){
-#         subject_obj <- geoflow_subject$new(str = subject)
-#         entity$addSubject(subject_obj)
-#       }))
+      thesaurus <-NULL
+      all_keywords <-NULL
+      all_keywords <-data.frame(keyword = character(), thesaurus = character(),stringsAsFactors=FALSE)
+      
+      for(i in 1:length(md$identificationInfo[[1]]$descriptiveKeywords)){
+        thesaurus <- md$identificationInfo[[1]]$descriptiveKeywords[[i]]$thesaurusName$title
+        keywords <- md$identificationInfo[[1]]$descriptiveKeywords[[i]]$keyword
+        for(k in 1:length(keywords)){
+          if(is.character(keywords[k][[1]])){
+            keyword <- md$identificationInfo[[1]]$descriptiveKeywords[[i]]$keyword[[k]]
+          } else {keyword <- md$identificationInfo[[1]]$descriptiveKeywords[[i]]$keyword[[k]]$value}
+          
+          pattern=paste0(thesaurus,":the ",keyword,";")
+          subjects <- unlist(strsplit(sanitize_str(pattern), ";"))
+          
+          #set data frame
+          for (s in subjects){
+            all_keywords[nrow(all_keywords)+1,] <- c(s, thesaurus)
+          }
+          invisible(lapply(subjects, function(subject){
+            subject_obj <- geoflow_subject$new(str = subject)
+            entity$addSubject(subject_obj)
+            }))
+        }
+      }
+      
+      config$logger.info("----------------------------------------------------")  
+      config$logger.info("return the R metadata entity")  
+      config$logger.info("----------------------------------------------------")  
       
       
       entities <- c(entities, entity)
@@ -123,8 +135,6 @@ handle_entities_iso_19115 <- function(config, source){
 }
 
 
-# coco <- handle_contacts_19115(cfg, md$identificationInfo[[1]]$citation$citedResponsibleParty)
-
 handle_contacts_19115 <- function(config, source){
   
 #   if(!is(source, "geoflow_contact")){
@@ -132,6 +142,7 @@ handle_contacts_19115 <- function(config, source){
 #     config$logger.error(errMsg)
 #     stop(errMsg)
 #   }
+  
   the_contact <- source
   contact_obj <- geoflow_contact$new()
   
@@ -141,7 +152,7 @@ handle_contacts_19115 <- function(config, source){
   if(is.null(the_contact$individualName)==FALSE) contact_obj$setIndividualName(the_contact$individualName) else contact_obj$setIndividualName("-")
   if(is.null(the_contact$organisationName)==FALSE) contact_obj$setOrganizationName(the_contact$organisationName) else contact_obj$setOrganizationName("-")
   if(is.null(the_contact$positionName)==FALSE) contact_obj$setPositionName(the_contact$positionName) else contact_obj$setPositionName("-")
-  if(is.null(the_contact$contactInfo$address$deliveryPoint)==FALSE) contact_obj$setPostalAddress(the_contact$contactInfo$address$deliveryPoint) else contact_obj$setPostalAddress("-")
+  # if(is.null(the_contact$contactInfo$address$deliveryPoint)==FALSE) contact_obj$setPostalAddress(the_contact$contactInfo$address$deliveryPoint) else contact_obj$setPostalAddress("-")
   if(is.null(the_contact$contactInfo$address$city)==FALSE) contact_obj$setCity(the_contact$contactInfo$address$city) else contact_obj$setCity("-")
   if(is.null(the_contact$contactInfo$address$country)==FALSE) contact_obj$setCountry(the_contact$contactInfo$address$country) else contact_obj$setCountry("-")
   # if(is.null(the_contact$contactInfo$address$administrativeArea)==FALSE) contact_obj$setPositionName(the_contact$contactInfo$address$administrativeArea) else contact_obj$setPositionName("-")
