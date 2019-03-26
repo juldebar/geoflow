@@ -29,8 +29,12 @@
     {
       "id": "geometa-create-iso-19115",
       "options" : {
-        "inspire" : true
+        "inspire" : false
       },
+      "run": true
+    },
+        {
+      "id": "create-eml",
       "run": true
     }
   ]
